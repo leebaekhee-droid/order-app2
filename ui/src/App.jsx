@@ -28,6 +28,14 @@ function App() {
       imageUrl:
         'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80',
     },
+    {
+      id: 4,
+      name: '녹차 라떼',
+      price: 5500,
+      description: '진한 녹차와 부드러운 우유가 어우러진 라떼',
+      imageUrl:
+        'https://images.unsplash.com/photo-1545665277-5937489579f2?auto=format&fit=crop&w=800&q=80',
+    },
   ]
 
   const formatPrice = (value) =>
@@ -152,6 +160,7 @@ function App() {
     { id: 1, name: '아메리카노 (ICE)', quantity: 10 },
     { id: 2, name: '아메리카노 (HOT)', quantity: 10 },
     { id: 3, name: '카페라떼', quantity: 10 },
+    { id: 4, name: '녹차 라떼', quantity: 10 },
   ])
 
   const [orderStatusSummary, setOrderStatusSummary] = useState({
