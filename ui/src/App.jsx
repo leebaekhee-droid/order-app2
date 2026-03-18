@@ -10,7 +10,8 @@ function App() {
   const [isLoadingMenus, setIsLoadingMenus] = useState(false)
   const [menuError, setMenuError] = useState(null)
 
-  const API_BASE_URL = 'http://localhost:4000/api'
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
 
   const menuImageById = {
     1: americanoIceImg,
