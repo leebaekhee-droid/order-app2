@@ -1,42 +1,13 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import './App.css'
 
 function App() {
   const [activeView, setActiveView] = useState('order')
-  const products = [
-    {
-      id: 1,
-      name: '아메리카노 (ICE)',
-      price: 4000,
-      description: '시원한 아이스 아메리카노',
-      imageUrl:
-        'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 2,
-      name: '아메리카노 (HOT)',
-      price: 4000,
-      description: '따뜻한 아메리카노',
-      imageUrl:
-        'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 3,
-      name: '카페라떼',
-      price: 5000,
-      description: '부드러운 우유 거품이 올라간 라떼',
-      imageUrl:
-        'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 4,
-      name: '녹차 라떼',
-      price: 5500,
-      description: '진한 녹차와 부드러운 우유가 어우러진 라떼',
-      imageUrl:
-        'https://images.unsplash.com/photo-1545665277-5937489579f2?auto=format&fit=crop&w=800&q=80',
-    },
-  ]
+  const [products, setProducts] = useState([])
+  const [isLoadingMenus, setIsLoadingMenus] = useState(false)
+  const [menuError, setMenuError] = useState(null)
+
+  const API_BASE_URL = 'http://localhost:4000/api'
 
   const formatPrice = (value) =>
     value.toLocaleString('ko-KR', { style: 'currency', currency: 'KRW' }).replace('₩', '') +
@@ -105,15 +76,38 @@ function App() {
 
   const totalPrice = cart.reduce((sum, item) => sum + item.linePrice, 0)
 
-  const [selectedOptions, setSelectedOptions] = useState(
-    products.reduce(
-      (acc, product) => ({
-        ...acc,
-        [product.id]: { shot: false, syrup: false },
-      }),
-      {},
-    ),
-  )
+  const [selectedOptions, setSelectedOptions] = useState({})
+
+  useEffect(() => {
+    const fetchMenus = async () => {
+      try {
+        setIsLoadingMenus(true)
+        setMenuError(null)
+        const res = await fetch(`${API_BASE_URL}/menus`)
+        if (!res.ok) {
+          throw new Error('메뉴를 불러오지 못했습니다.')
+        }
+        const data = await res.json()
+        setProducts(data)
+        setSelectedOptions(
+          data.reduce(
+            (acc, product) => ({
+              ...acc,
+              [product.id]: { shot: false, syrup: false },
+            }),
+            {},
+          ),
+        )
+      } catch (err) {
+        console.error(err)
+        setMenuError(err.message)
+      } finally {
+        setIsLoadingMenus(false)
+      }
+    }
+
+    fetchMenus()
+  }, [])
 
   const toggleOption = (productId, optionKey) => {
     setSelectedOptions((prev) => ({
@@ -125,7 +119,7 @@ function App() {
     }))
   }
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cart.length === 0) return
 
     const itemsSummary =
@@ -133,27 +127,49 @@ function App() {
         ? `${cart[0].product.name} × ${cart[0].quantity}`
         : `${cart[0].product.name} × ${cart[0].quantity} 외 ${cart.length - 1}건`
 
-    const newOrder = {
-      id: Date.now(),
-      orderedAt: new Date().toLocaleString('ko-KR', {
-        month: 'numeric',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      itemsSummary,
-      totalPrice,
-      status: '주문 접수',
-    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map((item) => ({
+            menuId: item.product.id,
+            quantity: item.quantity,
+          })),
+        }),
+      })
+      if (!res.ok) {
+        throw new Error('주문 생성에 실패했습니다.')
+      }
+      const created = await res.json()
 
-    setAdminOrders((prev) => [newOrder, ...prev])
-    setOrderStatusSummary((prev) => ({
-      ...prev,
-      total: prev.total + 1,
-      received: prev.received + 1,
-    }))
-    setCart([])
-    setActiveView('admin')
+      setAdminOrders((prev) => [
+        {
+          id: created.id,
+          orderedAt: new Date(created.orderedAt).toLocaleString('ko-KR', {
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          itemsSummary,
+          totalPrice: created.totalPrice,
+          status: created.status === 'RECEIVED' ? '주문 접수' : created.status,
+        },
+        ...prev,
+      ])
+      setOrderStatusSummary((prev) => ({
+        ...prev,
+        total: prev.total + 1,
+        received: prev.received + 1,
+      }))
+      alert('주문이 완료되었습니다.')
+      setCart([])
+      setActiveView('admin')
+    } catch (err) {
+      console.error(err)
+      alert(err.message)
+    }
   }
 
   const [stockItems, setStockItems] = useState([
@@ -229,7 +245,11 @@ function App() {
         {activeView === 'order' && (
           <>
         <section className="menu-section">
-          {products.map((product) => {
+          {isLoadingMenus && <p className="cart-empty">메뉴를 불러오는 중입니다...</p>}
+          {menuError && <p className="cart-empty">{menuError}</p>}
+          {!isLoadingMenus &&
+            !menuError &&
+            products.map((product) => {
             const options = selectedOptions[product.id]
             return (
               <article key={product.id} className="menu-card">

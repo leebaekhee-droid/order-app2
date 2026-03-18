@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
 const { query } = require('./db')
+const apiRouter = require('./routes')
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -24,6 +25,8 @@ app.get('/db-health', async (req, res) => {
     res.status(500).json({ status: 'error', message: 'Database connection failed' })
   }
 })
+
+app.use('/api', apiRouter)
 
 app.listen(PORT, () => {
   console.log(`API server listening on http://localhost:${PORT}`)
