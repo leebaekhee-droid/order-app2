@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react'
+import americanoIceImg from './assets/americano-ice.jpg'
+import americanoHotImg from './assets/americano-hot.jpg'
+import latteImg from './assets/latte.jpg'
 import './App.css'
 
 function App() {
@@ -8,6 +11,13 @@ function App() {
   const [menuError, setMenuError] = useState(null)
 
   const API_BASE_URL = 'http://localhost:4000/api'
+
+  const menuImageById = {
+    1: americanoIceImg,
+    2: americanoHotImg,
+    3: latteImg,
+    4: null,
+  }
 
   const formatPrice = (value) =>
     value.toLocaleString('ko-KR', { style: 'currency', currency: 'KRW' }).replace('₩', '') +
@@ -88,9 +98,10 @@ function App() {
           throw new Error('메뉴를 불러오지 못했습니다.')
         }
         const data = await res.json()
-        setProducts(data)
+        const filtered = data.filter((menu) => menu.id !== 4 && menu.id !== '4')
+        setProducts(filtered)
         setSelectedOptions(
-          data.reduce(
+          filtered.reduce(
             (acc, product) => ({
               ...acc,
               [product.id]: { shot: false, syrup: false },
@@ -176,7 +187,6 @@ function App() {
     { id: 1, name: '아메리카노 (ICE)', quantity: 10 },
     { id: 2, name: '아메리카노 (HOT)', quantity: 10 },
     { id: 3, name: '카페라떼', quantity: 10 },
-    { id: 4, name: '녹차 라떼', quantity: 10 },
   ])
 
   const [orderStatusSummary, setOrderStatusSummary] = useState({
@@ -254,15 +264,17 @@ function App() {
             return (
               <article key={product.id} className="menu-card">
                 <div className="menu-image-wrapper">
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="menu-image"
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.style.visibility = 'hidden'
-                    }}
-                  />
+                  {menuImageById[Number(product.id)] ? (
+                    <img
+                      src={menuImageById[Number(product.id)]}
+                      alt={product.name}
+                      className="menu-image"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.visibility = 'hidden'
+                      }}
+                    />
+                  ) : null}
                 </div>
                 <div className="menu-body">
                   <h2 className="menu-title">{product.name}</h2>
