@@ -10,8 +10,11 @@ function App() {
   const [isLoadingMenus, setIsLoadingMenus] = useState(false)
   const [menuError, setMenuError] = useState(null)
 
+  // Render에 배포할 때 환경변수 세팅 UI를 못 찾는 경우를 대비해
+  // 기본 API 주소를 Render 백엔드로 고정한다.
   const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
+    import.meta.env.VITE_API_BASE_URL ||
+    'https://order-app2-backend-2bnl.onrender.com/api'
 
   const menuImageById = {
     1: americanoIceImg,
